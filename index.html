@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sélection des joueurs</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/js/bootstrap-datepicker.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/css/bootstrap-datepicker.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Sélection des joueurs</h1>
+
+        <!-- Sélection de la date -->
+        <div class="form-group">
+            <label for="datePicker">Choisissez une date</label>
+            <input type="text" class="form-control" id="datePicker" placeholder="jj/MM/aaaa" readonly>
+        </div>
+
+        <!-- Sélection des joueurs et des catégories -->
+        <div class="form-group">
+            <label for="playerSelect">Sélectionnez une personne</label>
+            <select class="form-control" id="playerSelect">
+                <option value="Antoine">Antoine</option>
+                <option value="Pierre">Pierre</option>
+                <option value="Jérémy">Jérémy</option>
+                <option value="Sylvain">Sylvain</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="categorySelect">Associez à une catégorie</label>
+            <select class="form-control" id="categorySelect">
+                <option value="Seniors 2">Seniors 2</option>
+                <option value="Seniors 3">Seniors 3</option>
+                <option value="U18m">U18m</option>
+            </select>
+        </div>
+
+        <!-- Bouton d'enregistrement -->
+        <button class="btn btn-primary" id="saveButton">Enregistrer</button>
+
+        <hr>
+
+        <!-- Historique des sélections -->
+        <h2>Historique des sélections</h2>
+        <div id="history"></div>
+
+        <hr>
+
+        <!-- Boutons de préparation de message -->
+        <button class="btn btn-success" id="whatsappButton">Préparer pour WhatsApp</button>
+        <button class="btn btn-info" id="messengerButton">Préparer pour Messenger</button>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Initialisation du calendrier
+            $('#datePicker').datepicker({
+                format: 'dd/mm/yyyy',
+                autoclose: true
+            });
+
+            // Fonction d'enregistrement des données
+            $('#saveButton').click(function() {
+                const date = $('#datePicker').val();
+                const player = $('#playerSelect').val();
+                const category = $('#categorySelect').val();
+
+                if (!date) {
+                    alert('Veuillez choisir une date.');
+                    return;
+                }
+
+                // Récupérer les données du localStorage
+                let data = JSON.parse(localStorage.getItem('selections')) || {};
+
+                // Ajouter la sélection à la date choisie
+                if (!data[date]) {
+                    data[date] = [];
+                }
+
+                data[date].push({ player, category });
+
+                // Enregistrer dans le localStorage
+                localStorage.setItem('selections', JSON.stringify(data));
+
+                alert('Données enregistrées avec succès.');
+
+                // Mettre à jour l'historique
+                updateHistory();
+            });
+
+            // Fonction pour mettre à jour l'historique
+            function updateHistory() {
+                const data = JSON.parse(localStorage.getItem('selections')) || {};
+                $('#history').html('');
+
+                Object.keys(data).forEach(date => {
+                    const entries = data[date].map(entry => `<li>${entry.player} - ${entry.category}</li>`).join('');
+                    $('#history').append(`<h5>${date}</h5><ul>${entries}</ul>`);
+                });
+            }
+
+            // Initialiser l'historique au chargement de la page
+            updateHistory();
+
+            // Préparer message pour WhatsApp
+            $('#whatsappButton').click(function() {
+                const text = prepareMessage();
+                copyToClipboard(text);
+                alert('Message copié pour WhatsApp');
+            });
+
+            // Préparer message pour Messenger
+            $('#messengerButton').click(function() {
+                const text = prepareMessage();
+                copyToClipboard(text);
+                alert('Message copié pour Messenger');
+            });
+
+            // Fonction pour préparer le message
+            function prepareMessage() {
+                const data = JSON.parse(localStorage.getItem('selections')) || {};
+                let message = "Sélections des joueurs :\n";
+
+                Object.keys(data).forEach(date => {
+                    message += `\n${date} :\n`;
+                    data[date].forEach(entry => {
+                        message += `- ${entry.player} dans ${entry.category}\n`;
+                    });
+                });
+
+                return message;
+            }
+
+            // Fonction pour copier le texte dans le presse-papier
+            function copyToClipboard(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+        });
+    </script>
+</body>
+</html>
