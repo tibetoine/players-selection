@@ -405,17 +405,30 @@
         function prepareMessage() {
             const data = JSON.parse(localStorage.getItem('selections')) || {};
             var currentDate = document.getElementById('datepickerInput').value;
-            let message = "Sélections des joueurs :\n";
+            let message = `*Effectifs pour le Week-End du ${currentDate}*\n\n`;
 
-            message += `\n${currentDate} :\n`;
-            message += `- Seniors 2 : ${data[currentDate].seniors2.join(', ') || 'Aucun'}\n`;
-            message += `- Seniors 3 : ${data[currentDate].seniors3.join(', ') || 'Aucun'}\n`;
-            message += `- U18m : ${data[currentDate].u18m.join(', ') || 'Aucun'}\n`;
+            const categories = ['seniors2', 'seniors3', 'u18m'];
 
-
+            categories.forEach(category => {
+                const players = data[currentDate][category] || [];
+                message += `*${capitalizeFirstLetter(category)} :*\n`;
+                if (players.length > 0) {
+                    players.forEach((player, index) => {
+                        message += `${index + 1}. ${player}\n`;
+                    });
+                } else {
+                    message += `Aucun\n`;
+                }
+                message += `\n`; // Ajoute une ligne vide après chaque catégorie
+            });
 
             return message;
         }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
 
         function copyToClipboard(text) {
             const textarea = document.createElement('textarea');
