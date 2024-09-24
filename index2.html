@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Effectifs ASCT du WeekEnd</title>
+    <!-- Lien vers Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+    <!-- Datepicker Bootstrap 5 compatible -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+    <!-- Datepicker FR -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.fr.min.js"></script>
+
+    <style>
+        /* Style personnalisé pour mettre en évidence les week-ends */
+        .weekend {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .categoryPicker {
+            min-height: 200px;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        .category {
+            min-height: 200px;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        .player {
+            padding-left: 10px;
+            padding-right: 10px;
+            margin: 2px 0;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: grab;
+        }
+
+        #effectifSelection {
+            /* display: none; */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center">Sélection des joueurs - Drag & Drop</h1>
+
+        <!-- Sélection de la date -->
+        <div class="container mt-4">
+            <h2>Choisis une date</h2>
+            <div class="input-group date" id="datepicker">
+                <input type="text" class="form-control" id="datepickerInput" placeholder="dd/mm/yyyy"
+                    value="28/09/2024" />
+            </div>
+        </div>
+        <div id="effectifSelection">
+            <div class="row mt-4">
+                <h1>Prend des joueurs ici</h1>
+                <!-- Colonne des joueurs -->
+                <div id="playerListContent" class="row mt-4 player-list">
+
+                </div>
+
+
+                <hr />
+                <!-- Colonnes des catégories -->
+                <h1>Dépose les ici</h1>
+                <div class="col-md-3">
+                    <h3>Seniors 2</h3>
+                    <div id="seniors2" class="category" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+
+                <div class="col-md-3">
+                    <h3>Seniors 3</h3>
+                    <div id="seniors3" class="category" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+
+                <div class="col-md-3">
+                    <h3>U18m</h3>
+                    <div id="u18m" class="category" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+        <!-- Boutons de préparation de message -->
+        <button class="btn btn-success mt-3" id="whatsappButton">Préparer pour WhatsApp</button>
+        <button class="btn btn-info mt-3" id="messengerButton">Préparer pour Messenger</button>
+
+        <hr>
+
+        <!-- Historique des sélections -->
+        <h2>Historique des sélections</h2>
+        <div id="history"></div>
+
+    </div>
+
+    <script>
+        // Initialisation du calendrier
+        const playersData = {
+            "Seniors1": [
+                { "name": "Calvin" },
+                { "name": "By" },
+                { "name": "Romain" },
+                { "name": "R100" }
+            ],
+            "Seniors2": [
+                { "name": "Antoine" },
+                { "name": "Baptiste P" },
+                { "name": "Bastien" },
+                { "name": "Pupuce" },
+                { "name": "Germain" },
+                { "name": "Jérémy L" },
+                { "name": "Tony" },
+                { "name": "Momo" },
+                { "name": "Aurélien" }
+            ],
+            "Seniors3": [
+                { "name": "Pélo" },
+                { "name": "Guillaume" },
+                { "name": "Maxence Dvl" },
+                { "name": "Jo" },
+                { "name": "Alban" },
+                { "name": "Geoffrey" },
+                { "name": "Gael" },
+                { "name": "Sylvain" }
+            ],
+            "U18": [
+                { "name": "Lenny" },
+                { "name": "Evan" },
+                { "name": "Randy" }
+            ]
+        };
+
+        const playerListContent = document.getElementById('playerListContent');
+
+        for (const category in playersData) {
+            // Créer une div avec la classe col-md-3
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-md-3';
+
+            // Créer un élément h3
+            const h3 = document.createElement('h3');
+            h3.textContent = category;
+
+            // Ajouter l'élément h3 à la div
+            colDiv.appendChild(h3);
+
+            // Créer une div pour la catégorie
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'categoryPicker';
+
+            // Ajouter des joueurs à la catégorie
+            playersData[category].forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = "player";
+                playerDiv.dataset.player = player.name;
+                playerDiv.textContent = player.name;
+                playerDiv.draggable = true; // Rendre le joueur draggable
+                playerDiv.ondragstart = drag; // Associer l'événement drag
+
+                // Ajouter le joueur à la catégorie
+                categoryDiv.appendChild(playerDiv);
+            });
+
+            // Ajouter la catégorie à la div
+            colDiv.appendChild(categoryDiv);
+
+            // Ajouter la colonne à playerListContent
+            playerListContent.appendChild(colDiv);
+        }
+
+        // Stocker les sélections
+        function saveData() {
+            const selections = {};
+
+            // Itérer à travers chaque catégorie
+            document.querySelectorAll('.category').forEach(category => {
+                const categoryId = category.id;
+                selections[categoryId] = [];
+
+                category.querySelectorAll('.player').forEach(player => {
+                    selections[categoryId].push(player.dataset.player);
+                });
+            });
+
+            // Enregistrer les sélections dans le localStorage avec la date actuelle
+            const currentDate = document.getElementById('datepickerInput').value;
+            const data = JSON.parse(localStorage.getItem('selections')) || {};
+            data[currentDate] = selections;
+            localStorage.setItem('selections', JSON.stringify(data));
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.dataset.player);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+
+            // Vérifier si le joueur existe déjà dans la catégorie
+            const existingPlayer = ev.target.querySelector(`[data-player="${data}"]`);
+            if (!existingPlayer) {
+                const playerDiv = document.createElement("div");
+                playerDiv.className = "player";
+                playerDiv.dataset.player = data;
+                playerDiv.textContent = data;
+                playerDiv.draggable = true; // Rendre le joueur draggable
+                playerDiv.ondragstart = drag; // Associer l'événement drag
+
+                // Ajouter un bouton "X" pour supprimer le joueur de la catégorie
+                const removeBtn = document.createElement('span');
+                removeBtn.textContent = ' X';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.style.marginLeft = '10px';
+                removeBtn.onclick = function () {
+                    playerDiv.remove();  // Supprimer le joueur de la catégorie
+                    saveData(); // Mettre à jour les données après la suppression
+                };
+
+                playerDiv.appendChild(removeBtn);
+
+                ev.target.appendChild(playerDiv);
+                saveData(); // Sauvegarder les données après le drop
+            }
+        }
+
+        function loadSelection(date) {
+            console.log(date);
+            const data = JSON.parse(localStorage.getItem('selections')) || {};
+            const selectionData = data[date]; // Récupérer directement l'objet pour la date donnée
+
+            console.log(selectionData);
+
+            // Vider toutes les catégories
+            document.querySelectorAll('.category').forEach(category => {
+                category.innerHTML = '';
+            });
+
+            // Mettre à jour le champ de date
+            document.getElementById('datepickerInput').value = date;
+
+            // Itérer à travers chaque catégorie et ajouter les joueurs
+            Object.keys(selectionData).forEach(category => {
+                console.log('for each category', category);
+                selectionData[category].forEach(playerName => {
+                    const playerDiv = document.createElement("div");
+                    playerDiv.className = "player";
+                    playerDiv.dataset.player = playerName;
+                    playerDiv.textContent = playerName;
+                    playerDiv.draggable = true; // Rendre le joueur draggable
+                    playerDiv.ondragstart = drag; // Associer l'événement drag
+
+                    // Ajouter un bouton "X" pour supprimer le joueur de la catégorie
+                    const removeBtn = document.createElement('span');
+                    removeBtn.textContent = ' X';
+                    removeBtn.style.cursor = 'pointer';
+                    removeBtn.style.marginLeft = '10px';
+                    removeBtn.onclick = function () {
+                        playerDiv.remove();  // Supprimer le joueur de la catégorie
+                        saveData(); // Mettre à jour les données après la suppression
+                    };
+
+                    playerDiv.appendChild(removeBtn);
+
+                    // Ajouter le joueur à la catégorie correspondante
+                    document.getElementById(category.toLowerCase()).appendChild(playerDiv);
+                });
+            });
+        }
+
+        $(document).ready(function () {
+            // Initialiser le datepicker
+            $('#datepickerInput').datepicker({
+                format: "dd/mm/yyyy",
+                language: "fr",
+                autoclose: true,
+                todayHighlight: true
+            }).on('changeDate', function (e) {
+                loadSelection(e.format()); // Charger la sélection lors du changement de date
+            });
+
+            loadSelection($('#datepickerInput').val()); // Charger la sélection initiale
+        });
+
+        document.getElementById('whatsappButton').onclick = function () {
+            const currentDate = document.getElementById('datepickerInput').value;
+            const selections = JSON.parse(localStorage.getItem('selections')) || {};
+            const players = selections[currentDate] || {};
+
+            let message = "Sélection des joueurs pour le " + currentDate + " :\n";
+            for (const category in players) {
+                message += "\n" + category + " : " + players[category].join(', ');
+            }
+
+            const whatsappLink = "https://wa.me/?text=" + encodeURIComponent(message);
+            window.open(whatsappLink, '_blank');
+        };
+
+        document.getElementById('messengerButton').onclick = function () {
+            const currentDate = document.getElementById('datepickerInput').value;
+            const selections = JSON.parse(localStorage.getItem('selections')) || {};
+            const players = selections[currentDate] || {};
+
+            let message = "Sélection des joueurs pour le " + currentDate + " :\n";
+            for (const category in players) {
+                message += "\n" + category + " : " + players[category].join(', ');
+            }
+
+            const messengerLink = "https://www.messenger.com/t/?text=" + encodeURIComponent(message);
+            window.open(messengerLink, '_blank');
+        };
+        function displayHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = ''; // Vider l'historique avant d'ajouter les nouvelles entrées
+            const data = JSON.parse(localStorage.getItem('selections')) || {};
+
+            // Itérer à travers chaque date dans les sélections
+            Object.keys(data).forEach(date => {
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'history-entry';
+                dateDiv.innerHTML = `<strong>${date}</strong><span style="cursor: pointer; color: blue;" onclick='loadSelection("${date}")'> [Charger]</span>`;
+
+                const selections = data[date];
+                let playersList = '';
+                for (const category in selections) {
+                    playersList += `<br>${category}: ${selections[category].join(', ')}`;
+                }
+
+                dateDiv.innerHTML += playersList;
+                historyDiv.appendChild(dateDiv);
+            });
+        }
+        displayHistory();
+
+    </script>
+
+</body>
+
+</html>

@@ -22,6 +22,9 @@
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.fr.min.js"></script>
 
+    <!-- font awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
     <style>
         /* Style personnalisé pour mettre en évidence les week-ends */
         .weekend {
@@ -68,6 +71,43 @@
         #effectifSelection {
             /* display: none; */
         }
+
+        .whatsapp-button {
+            background-color: #25D366;
+            /* Couleur WhatsApp */
+            color: white;
+            border: none;
+        }
+
+        .whatsapp-button:hover {
+            background-color: #128C7E;
+            /* Couleur sombre au survol */
+        }
+
+        .messenger-button {
+            background-color: #1877F2;
+            /* Couleur Facebook */
+            color: white;
+            border: none;
+        }
+
+        .messenger-button:hover {
+            background-color: #005C99;
+            /* Couleur sombre au survol */
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .btn i {
+            margin-right: 8px;
+            /* Espace entre l'icône et le texte */
+        }
     </style>
 </head>
 
@@ -80,8 +120,7 @@
         <div class="container mt-4">
             <h2>Choisis une date</h2>
             <div class="input-group date" id="datepicker">
-                <input type="text" class="form-control" id="datepickerInput" placeholder="dd/mm/yyyy"
-                    value="28/09/2024" />
+                <input type="text" class="form-control" id="datepickerInput" placeholder="dd/mm/yyyy" />
             </div>
         </div>
         <div id="effectifSelection">
@@ -115,8 +154,12 @@
 
         <hr>
         <!-- Boutons de préparation de message -->
-        <button class="btn btn-success mt-3" id="whatsappButton">Préparer pour WhatsApp</button>
-        <button class="btn btn-info mt-3" id="messengerButton">Préparer pour Messenger</button>
+        <button class="btn btn-success whatsapp-button mt-3" id="whatsappButton">
+            <i class="fab fa-whatsapp"></i> Message pour WhatsApp
+        </button>
+        <button class="btn btn-info messenger-button mt-3" id="messengerButton">
+            <i class="fab fa-facebook-messenger"></i> Message pour Messenger
+        </button>
 
         <hr>
 
@@ -132,7 +175,7 @@
             "Seniors1": [
                 { "name": "Calvin" },
                 { "name": "By" },
-                { "name": "Romain" },                
+                { "name": "Romain" },
                 { "name": "R100" }
             ],
             "Seniors2": [
@@ -181,7 +224,7 @@
             // Ajouter l'élément h3 et la div categoryPicker à la div col-md-3
             colDiv.appendChild(h3);
             colDiv.appendChild(categoryPickerDiv);
-          
+
 
             playerListContent.appendChild(colDiv);
 
@@ -203,11 +246,15 @@
                 daysOfWeekHighlighted: "0,6",  // Met en évidence les weekends (dimanche et samedi)
                 weekStart: 1,  // La semaine commence le lundi
                 todayHighlight: true,
-                autoclose: true
+                autoclose: true,
+                beforeShowDay: function (date) {
+                    return [date.getDay() === 0, '']; // Ne permettre que le dimanche
+                }
             });
 
             // Ajout de la classe weekend aux jours du weekend
             $('#datepicker').on('changeDate', function (e) {
+                console.log("La date change ...");
                 var dateText = $(this).text();
                 if (dateText) {
                     $('#effectifSelection').fadeIn('slow');
@@ -223,11 +270,23 @@
                         $(this).addClass('weekend');
                     }
                 });
+
+                // Chargement de la sélection par date
+                loadSelection(dateText);
             });
+
+            // Charger la sélection pour le prochain dimanche
+            const nextSunday = getNextSunday();
+            document.getElementById('datepickerInput').value = nextSunday; // Mettre à jour le champ de date
+            loadSelection(nextSunday); // Charger la sélection pour le prochain dimanche
 
         });
 
-
+        function getNextSunday() {
+            const today = moment();
+            const daysUntilSunday = (7 - today.day()) % 7; // 0 pour aujourd'hui, 6 pour samedi
+            return today.add(daysUntilSunday, 'days').format('DD/MM/YYYY');
+        }
         // Autoriser le dragover
         function allowDrop(ev) {
             ev.preventDefault();
@@ -325,12 +384,22 @@
             historyDiv.innerHTML = '';
 
             Object.keys(data).forEach(date => {
-                historyDiv.innerHTML += `<h5>${date}</h5>
-                    <p>Seniors 2: ${data[date].seniors2.join(', ') || 'Aucun'}</p>
-                    <p>Seniors 3: ${data[date].seniors3.join(', ') || 'Aucun'}</p>
-                    <p>U18m: ${data[date].u18m.join(', ') || 'Aucun'}</p>`;
+                if (date == null || date == 'undefined') {
+                    return;
+                }
+
+
+                historyDiv.innerHTML += `
+            <h5>
+                ${date}
+                <span style="cursor: pointer; color: blue;" onclick='loadSelection("${date}")'> [Charger]</span>
+            </h5>
+            <p>Seniors 2: ${data[date].seniors2.join(', ') || 'Aucun'}</p>
+            <p>Seniors 3: ${data[date].seniors3.join(', ') || 'Aucun'}</p>
+            <p>U18m: ${data[date].u18m.join(', ') || 'Aucun'}</p>`;
             });
         }
+
 
         // Préparer message pour WhatsApp ou Messenger
         function prepareMessage() {
@@ -357,6 +426,85 @@
             document.body.removeChild(textarea);
         }
 
+        function loadSelection(date) {
+            console.log("Nettoyage ... ");
+            // Vider toutes les catégories
+            document.querySelectorAll('.category').forEach(category => {
+                category.innerHTML = '';
+            });
+            console.log("Loading Selection ... ");
+            const data = JSON.parse(localStorage.getItem('selections')) || {};
+            const selectionData = data[date]; // Récupérer directement l'objet pour la date donnée
+
+            console.log(selectionData);
+
+            /* Si aucune donnée pour cette date, alors je ne charge rien */
+            if (selectionData == null) {
+                console.log("Aucune donnée à charger ... ");
+                return;
+            }
+
+
+            // Mettre à jour le champ de date
+            document.getElementById('datepickerInput').value = date;
+
+            // Itérer à travers chaque catégorie et ajouter les joueurs
+            Object.keys(selectionData).forEach(category => {
+                console.log('for each category', category);
+                selectionData[category].forEach(playerName => {
+                    const playerDiv = document.createElement("div");
+                    playerDiv.className = "player";
+                    playerDiv.dataset.player = playerName;
+                    playerDiv.textContent = playerName;
+                    playerDiv.draggable = true; // Rendre le joueur draggable
+                    playerDiv.ondragstart = drag; // Associer l'événement drag
+
+                    // Créer l'élément de croix pour enlever le joueur
+                    const removeButton = document.createElement("span");
+                    removeButton.textContent = "✖"; // Utiliser une croix
+                    removeButton.className = "remove-player";
+                    removeButton.style.cursor = "pointer"; // Changer le curseur pour indiquer que c'est cliquable
+
+                    // Ajouter un gestionnaire d'événements pour retirer le joueur
+                    removeButton.onclick = () => {
+                        // Retirer le joueur de la catégorie affichée
+                        playerDiv.remove();
+
+                        // Enlever le joueur de la sélection (si nécessaire)
+                        deletePlayerFromSelection(date, category, playerName);
+
+                        console.log("Saving data ...");
+                        saveData();
+                    };
+
+                    // Ajouter la croix au joueur
+                    playerDiv.appendChild(removeButton);
+
+                    // Ajouter le joueur à la catégorie correspondante
+                    document.getElementById(category.toLowerCase()).appendChild(playerDiv);
+                });
+            });
+        }
+
+        // Fonction pour supprimer un joueur de la sélection
+        function deletePlayerFromSelection(date, category, playerName) {
+            const data = JSON.parse(localStorage.getItem('selections')) || {};
+
+            if (data[date] && data[date][category]) {
+                // Filtrer les joueurs pour enlever celui qui a été retiré
+                data[date][category] = data[date][category].filter(player => player !== playerName);
+
+                // Si la catégorie est vide, supprimer la catégorie
+                if (data[date][category].length === 0) {
+                    delete data[date][category];
+                }
+
+                // Enregistrer les modifications dans le localStorage
+                localStorage.setItem('selections', JSON.stringify(data));
+            }
+        }
+
+
         document.getElementById('whatsappButton').addEventListener('click', function () {
             const message = prepareMessage();
             copyToClipboard(message);
@@ -369,6 +517,9 @@
             copyToClipboard(text);
             alert('Message copié pour Messenger');
         });
+
+
+
 
         // Mise à jour de l'historique au chargement
         updateHistory();
